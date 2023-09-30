@@ -35,10 +35,9 @@ if __name__ == "__main__":
 
 
     output_dir = 'output'
-    toc = create_toc_section(elements, section_title = 'Table of content', list_type = 'ul')            
+    toc = create_toc_section(elements, section_title = 'Table of content', list_type = 'ul')
     ref_content = create_reference_section(tree, section_title = 'References', list_type = 'ol')
 
     html_content = add_head(toc + body_content + ref_content)
-    write_html(html_content, f'{output_dir}/output.html')  
+    write_html(html_content, f'{output_dir}/output.html')
     copy_jpg_files(f'{pmc_id}', f'{output_dir}/figs')
-
