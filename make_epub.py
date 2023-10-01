@@ -4,7 +4,7 @@ import glob
 from ebooklib import epub
 
 
-def main(pmc_ids, html_dir, output_file):
+def main(pmc_ids, html_dir:str,  output_file:str, css_file:str = './css/styles.css'):
     book = epub.EpubBook()
     # set metadata
     book.set_identifier("id123456")
@@ -19,7 +19,7 @@ def main(pmc_ids, html_dir, output_file):
 
         # create chapter
         c1 = epub.EpubHtml(title=f"{pmc_id}", file_name=f"{pmc_id}.xhtml", lang="hr")
-        toc.append(epub.Link(f"{pmc_id}.xhtml", {pmc_id}, "intro"))
+        toc.append(epub.Link(f"{pmc_id}.xhtml", pmc_id, pmc_id))
         c1.content = (html_content)
 
         book.add_item(c1)
@@ -43,10 +43,12 @@ def main(pmc_ids, html_dir, output_file):
     book.add_item(epub.EpubNav())
 
     # define CSS style
-    style = "BODY {color: white;}"
+    with open(css_file, 'r', encoding='utf-8') as file:
+        style = file.read()
+
     nav_css = epub.EpubItem(
         uid="style_nav",
-        file_name=f"{html_dir}/css/styles.css",
+        file_name=f"css/styles.css",
         media_type="text/css",
         content=style,
     )
