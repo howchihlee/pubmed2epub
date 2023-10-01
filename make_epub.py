@@ -19,7 +19,7 @@ def main(pmc_ids, html_dir, output_file):
 
         # create chapter
         c1 = epub.EpubHtml(title=f"{pmc_id}", file_name=f"{pmc_id}.xhtml", lang="hr")
-        toc.append(epub.Link(f"{pmc_id}.xhtml", "Ch%02d" % i, "intro"))
+        toc.append(epub.Link(f"{pmc_id}.xhtml", {pmc_id}, "intro"))
         c1.content = (html_content)
 
         book.add_item(c1)
@@ -58,7 +58,7 @@ def main(pmc_ids, html_dir, output_file):
     book.spine = ["nav", c1]
 
     # write to the file
-    epub.write_epub("test.epub", book)
+    epub.write_epub(output_file, book)
 
 def parse_arguments():
     parser = argparse.ArgumentParser(description='Process PMC IDs and specify output file.')
