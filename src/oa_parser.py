@@ -1,9 +1,10 @@
 import os
 import re
+import shutil
+
+import lxml
 from lxml import etree
 from lxml import html as lxml_html
-import shutil
-import lxml
 
 
 def to_unicode_string(node, method = 'xml'):
@@ -56,27 +57,91 @@ def write_html(html_content, file_name='output.html'):
     with open(file_name, 'w') as f:
         f.write(html_content)
 
-def add_head(html_text):
-    head = '''
+def add_title_page(title, authors, abstract, keywords, main_content):
+    html_template = """
     <!DOCTYPE html>
-    <html>
+    <html lang="en">
     <head>
         <meta charset="UTF-8">
-        <title></title>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>{title}</title>
+        <style>
+            body {{
+                font-family: Arial, sans-serif;
+                margin: 0;
+                padding: 20px;
+                background-color: #f9f9f9;
+            }}
+            .container, .main-content {{
+                background-color: #fff;
+                padding: 20px;
+                margin: auto;
+                width: 80%;
+                border: 1px solid #ddd;
+                margin-bottom: 20px;
+            }}
+            .title {{
+                font-size: 24px;
+                margin-bottom: 10px;
+            }}
+            .authors, .keywords {{
+                font-style: italic;
+                margin-bottom: 10px;
+            }}
+            .abstract {{
+                margin-bottom: 10px;
+                background-color: #e0e0e0; /* Light gray background */
+                padding: 10px;
+                border-radius: 4px;
+            }}
+        </style>
     </head>
-    <style>
-    ol.no-numbers {
-      list-style-type: none;
-    }
-   </style>
-
     <body>
-    '''
-    end = '''
+        <div class="container">
+            <div class="title">{title}</div>
+            <div class="authors">Authors: {authors}</div>
+            <div class="abstract">
+                <strong>Abstract:</strong>
+                <div>{abstract}</div>
+            </div>
+            <div class="keywords">Keywords: {keywords}</div>
+        </div>
+        <div class="main-content">
+            {main_content}
+        </div>
     </body>
     </html>
-    '''
-    return head + html_text + end
+    """
+    return html_template.format(
+        title=title,
+        authors=', '.join(authors),
+        abstract=abstract,
+        keywords=', '.join(keywords),
+        main_content=main_content
+    )
+
+def parse_article(tree):
+    title = tree.find(".//article-title").text
+    authors = []
+    for author in tree.findall(".//contrib[@contrib-type='author']"):
+        name = author.find('./name')
+        given_names = name.find('./given-names').text
+        surname = name.find('./surname').text
+        authors.append(f'{given_names} {surname}')
+
+    abstract = to_unicode_string(tree.find(".//abstract"))
+    keywords = [kwd.text for kwd in tree.findall(".//kwd")]
+
+    title_page = f'''<div class="container">
+            <div class="title">{title}</div>
+            <div class="authors">Authors: {', '.join(authors)}</div>
+            <div class="abstract">
+                <strong>Abstract:</strong>
+                <div>{abstract}</div>
+            </div>
+            <div class="keywords">Keywords: {', '.join(keywords)}</div>
+        </div>'''
+    return title_page, (title, authors, abstract, keywords)
 
 def replace_xref_with_link(xml_string):
     root = etree.fromstring(xml_string)
@@ -90,6 +155,10 @@ def replace_xref_with_link(xml_string):
             a_element.set('href', f'#{rid}')
         if ref_type:
             a_element.set('ref-type', ref_type)
+
+        for child in xref_element:
+            a_element.append(child)
+
         a_element.text = xref_element.text
         a_element.tail = xref_element.tail
         xref_element.getparent().replace(xref_element, a_element)
