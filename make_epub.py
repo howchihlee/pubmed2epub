@@ -1,62 +1,42 @@
-from ebooklib import epub
+import argparse
 import glob
 
-if __name__ == '__main__':
-    html_dir = 'output'
-    book = epub.EpubBook()
+from ebooklib import epub
 
+
+def main(pmc_ids, html_dir, output_file):
+    book = epub.EpubBook()
     # set metadata
     book.set_identifier("id123456")
-    book.set_title("Sample book")
+    book.set_title("Pubmed paper collection")
     book.set_language("en")
+    book.add_author("Awesome author")
 
-    book.add_author("Author Authorowski")
-    book.add_author(
-        "Danko Bananko",
-        file_as="Gospodin Danko Bananko",
-        role="ill",
-        uid="coauthor",
-    )
+    toc = []
+    for i, pmc_id in enumerate(pmc_ids):
+        with open(f'{html_dir}/{pmc_id}.html', 'r', encoding='utf-8') as f:
+            html_content = f.read()
 
-    with open(f'{html_dir}/output.html', 'r', encoding='utf-8') as f:
-        html_content = f.read()
-        
-    # create chapter
-    c1 = epub.EpubHtml(title="Intro", file_name="chap_01.xhtml", lang="hr")
-    c1.content = (html_content)
+        # create chapter
+        c1 = epub.EpubHtml(title=f"{pmc_id}", file_name=f"{pmc_id}.xhtml", lang="hr")
+        toc.append(epub.Link(f"{pmc_id}.xhtml", "Ch%02d" % i, "intro"))
+        c1.content = (html_content)
 
+        book.add_item(c1)
 
+    ## move this part to separate pmc_id directories later
     fig_files = glob.glob(f"{html_dir}/figs/*.jpg", recursive=True)
-    print(fig_files)
     for fn in fig_files:
-        #with open(fn, "rb") as reader:
-        #    image_content = reader.read()
-        #if True:
-        #    image_content = open(fn, 'rb').read()
-        #    img = epub.EpubImage(
-        #        uid = f"{fn.split('.')[0]}",
-        #        file_name = f"figs/{fn}",
-        #        media_type = "image/jpg",
-        #        content = image_content,
-        #    )
         with open(fn, "rb") as reader:
             image_content = reader.read()
             ei = epub.EpubImage()
             ei.file_name = f"figs/{fn.split('/')[-1]}"
             ei.media_type = 'image/jpg'
-            ei.content = image_content 
+            ei.content = image_content
             book.add_item(ei)
 
-    # add chapter
-    book.add_item(c1)
-    # add image
-    #book.add_item(img)
-
     # define Table Of Contents
-    book.toc = (
-        epub.Link("chap_01.xhtml", "Introduction", "intro"),
-        (epub.Section("Simple book"), (c1,)),
-    )
+    book.toc = tuple(toc)
 
     # add default NCX and Nav file
     book.add_item(epub.EpubNcx())
@@ -79,3 +59,19 @@ if __name__ == '__main__':
 
     # write to the file
     epub.write_epub("test.epub", book)
+
+def parse_arguments():
+    parser = argparse.ArgumentParser(description='Process PMC IDs and specify output file.')
+    parser.add_argument('--pmc_ids', type=str, required=True, help='The PMC IDs to be processed. IDs are comma separated')
+    parser.add_argument('--output_file', type=str, default='ebook.epub', help='The file to write output to.')
+    return parser.parse_args()
+
+if __name__ == '__main__':
+    #args = parse_arguments()
+    pmc_ids = ['PMC9169933', 'PMC9720135']
+    html_dir = 'output'
+    output_file = 'ebook.epub'
+    #mock_args = argparse.Namespace(pmc_ids="your_pmc_ids_here",
+    #                               output_file="your_output_file_here")
+
+    main(pmc_ids, html_dir, output_file)
