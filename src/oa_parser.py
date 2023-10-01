@@ -65,36 +65,7 @@ def add_title_page(title, authors, abstract, keywords, main_content):
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>{title}</title>
-        <style>
-            body {{
-                font-family: Arial, sans-serif;
-                margin: 0;
-                padding: 20px;
-                background-color: #f9f9f9;
-            }}
-            .container, .main-content {{
-                background-color: #fff;
-                padding: 20px;
-                margin: auto;
-                width: 80%;
-                border: 1px solid #ddd;
-                margin-bottom: 20px;
-            }}
-            .title {{
-                font-size: 24px;
-                margin-bottom: 10px;
-            }}
-            .authors, .keywords {{
-                font-style: italic;
-                margin-bottom: 10px;
-            }}
-            .abstract {{
-                margin-bottom: 10px;
-                background-color: #e0e0e0; /* Light gray background */
-                padding: 10px;
-                border-radius: 4px;
-            }}
-        </style>
+        <link rel="stylesheet" href="./css/styles.css">  <!-- Link to the external CSS file -->
     </head>
     <body>
         <div class="container">

@@ -46,7 +46,7 @@ def main(pmc_ids, html_dir, output_file):
     style = "BODY {color: white;}"
     nav_css = epub.EpubItem(
         uid="style_nav",
-        file_name="style/nav.css",
+        file_name=f"{html_dir}/css/styles.css",
         media_type="text/css",
         content=style,
     )
