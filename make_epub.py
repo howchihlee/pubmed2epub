@@ -4,7 +4,7 @@ import glob
 from ebooklib import epub
 
 
-def main(pmc_ids, html_dir:str,  output_file:str, css_file:str = './css/styles.css'):
+def main(pmc_ids, html_dir:str,  output_file:str, css_file:str = './styles/style.css'):
     book = epub.EpubBook()
     # set metadata
     book.set_identifier("id123456")
@@ -13,16 +13,18 @@ def main(pmc_ids, html_dir:str,  output_file:str, css_file:str = './css/styles.c
     book.add_author("Awesome author")
 
     toc = []
+    chapters = []
     for i, pmc_id in enumerate(pmc_ids):
         with open(f'{html_dir}/{pmc_id}.html', 'r', encoding='utf-8') as f:
             html_content = f.read()
 
         # create chapter
-        c1 = epub.EpubHtml(title=f"{pmc_id}", file_name=f"{pmc_id}.xhtml", lang="hr")
-        toc.append(epub.Link(f"{pmc_id}.xhtml", pmc_id, pmc_id))
+        c1 = epub.EpubHtml(title=f"{pmc_id}", file_name=f"{pmc_id}.xhtml", lang="en")
         c1.content = (html_content)
 
         book.add_item(c1)
+        chapters.append(c1)
+        toc.append(epub.Link(f"{pmc_id}.xhtml", pmc_id, pmc_id))
 
     ## move this part to separate pmc_id directories later
     fig_files = glob.glob(f"{html_dir}/figs/*.jpg", recursive=True)
@@ -48,7 +50,7 @@ def main(pmc_ids, html_dir:str,  output_file:str, css_file:str = './css/styles.c
 
     nav_css = epub.EpubItem(
         uid="style_nav",
-        file_name=f"css/styles.css",
+        file_name=f"style/style.css",
         media_type="text/css",
         content=style,
     )
@@ -57,7 +59,7 @@ def main(pmc_ids, html_dir:str,  output_file:str, css_file:str = './css/styles.c
     book.add_item(nav_css)
 
     # basic spine
-    book.spine = ["nav", c1]
+    book.spine = ["nav"] + chapters
 
     # write to the file
     epub.write_epub(output_file, book)
