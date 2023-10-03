@@ -57,7 +57,7 @@ def write_html(html_content, file_name='output.html'):
     with open(file_name, 'w') as f:
         f.write(html_content)
 
-def add_title_page(title, authors, abstract, keywords, main_content):
+def add_title_page(title, title_div, main_content):
     html_template = """
     <!DOCTYPE html>
     <html lang="en">
@@ -69,13 +69,7 @@ def add_title_page(title, authors, abstract, keywords, main_content):
     </head>
     <body>
         <div class="container">
-            <div class="title">{title}</div>
-            <div class="authors">Authors: {authors}</div>
-            <div class="abstract">
-                <strong>Abstract:</strong>
-                <div>{abstract}</div>
-            </div>
-            <div class="keywords">Keywords: {keywords}</div>
+            {title_div}
         </div>
         <div class="main-content">
             {main_content}
@@ -85,9 +79,7 @@ def add_title_page(title, authors, abstract, keywords, main_content):
     """
     return html_template.format(
         title=title,
-        authors=', '.join(authors),
-        abstract=abstract,
-        keywords=', '.join(keywords),
+        title_div= title_div,
         main_content=main_content
     )
 
@@ -103,16 +95,18 @@ def parse_article(tree):
     abstract = to_unicode_string(tree.find(".//abstract"))
     keywords = [kwd.text for kwd in tree.findall(".//kwd")]
 
-    title_page = f'''<div class="container">
-            <div class="title">{title}</div>
-            <div class="authors">Authors: {', '.join(authors)}</div>
+    author_str = authors[-1]
+    if len(authors) > 1:
+        author_str = ', '.join(authors[:-1]) + ' and ' + author_str
+
+    title_div = f"""<div class="title">{title}</div>
+            <div class="authors">Authors: {author_str}</div>
             <div class="abstract">
                 <strong>Abstract:</strong>
                 <div>{abstract}</div>
             </div>
-            <div class="keywords">Keywords: {', '.join(keywords)}</div>
-        </div>'''
-    return title_page, (title, authors, abstract, keywords)
+            <div class="keywords">Keywords: {', '.join(keywords)}</div>"""
+    return title_div, (title, authors, abstract, keywords)
 
 def replace_xref_with_link(xml_string):
     root = etree.fromstring(xml_string)

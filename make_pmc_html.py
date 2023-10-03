@@ -32,7 +32,7 @@ def main(pmc_id: str):
     output_dir = 'output'
     create_directory(os.path.join(output_dir, 'figs'))
 
-    title_page, (title, authors, abstract, keywords) = parse_article(tree)
+    title_div, (title, authors, abstract, keywords) = parse_article(tree)
     toc = create_toc_section(elements, section_title = 'Table of content', list_type = 'ul')
 
     body_content = ''
@@ -48,7 +48,7 @@ def main(pmc_id: str):
 
     ref_content = create_reference_section(tree, section_title = 'References', list_type = 'ol')
     main_content = toc + body_content + ref_content
-    html_content = add_title_page(title, authors, abstract, keywords, main_content)
+    html_content = add_title_page(title, title_div, main_content)
     write_html(html_content, f'{output_dir}/{pmc_id}.html')
     copy_jpg_files(f'{pmc_id}', f'{output_dir}/figs')
     return

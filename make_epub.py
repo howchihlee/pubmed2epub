@@ -12,6 +12,16 @@ def main(pmc_ids, html_dir:str,  output_file:str, css_file:str = './styles/style
     book.set_language("en")
     book.add_author("Awesome author")
 
+    # define CSS style
+    with open(css_file, 'r', encoding='utf-8') as file:
+        style = file.read()
+    nav_css = epub.EpubItem(
+        uid="style_nav",
+        file_name=f"style/style.css",
+        media_type="text/css",
+        content=style,
+    )
+
     toc = []
     chapters = []
     for i, pmc_id in enumerate(pmc_ids):
@@ -21,6 +31,7 @@ def main(pmc_ids, html_dir:str,  output_file:str, css_file:str = './styles/style
         # create chapter
         c1 = epub.EpubHtml(title=f"{pmc_id}", file_name=f"{pmc_id}.xhtml", lang="en")
         c1.content = (html_content)
+        c1.add_item(nav_css)
 
         book.add_item(c1)
         chapters.append(c1)
@@ -43,17 +54,6 @@ def main(pmc_ids, html_dir:str,  output_file:str, css_file:str = './styles/style
     # add default NCX and Nav file
     book.add_item(epub.EpubNcx())
     book.add_item(epub.EpubNav())
-
-    # define CSS style
-    with open(css_file, 'r', encoding='utf-8') as file:
-        style = file.read()
-
-    nav_css = epub.EpubItem(
-        uid="style_nav",
-        file_name=f"style/style.css",
-        media_type="text/css",
-        content=style,
-    )
 
     # add CSS file
     book.add_item(nav_css)
