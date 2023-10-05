@@ -71,8 +71,10 @@ def parse_arguments():
     return parser.parse_args()
 
 if __name__ == '__main__':
-    #args = parse_arguments()
-    pmc_ids = ['PMC9169933', 'PMC9720135']
+    args = parse_arguments()
+    pmc_ids = [s for s in args.pmc_ids.split(',') if s.startswith('PMC')]
+    print(pmc_ids)
+    #pmc_ids = ['PMC9169933', 'PMC9720135']
     html_dir = 'output'
     output_file = 'ebook.epub'
     #mock_args = argparse.Namespace(pmc_ids="your_pmc_ids_here",

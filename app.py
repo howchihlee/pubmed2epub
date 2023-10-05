@@ -1,3 +1,4 @@
+import subprocess
 import time
 from xml.etree import ElementTree as ET
 
@@ -84,6 +85,27 @@ def submit():
     st.session_state.stored_ids.update(ids)
     st.session_state.widget = ""
 
+def run_command():
+    """Runs an external Python script with arguments."""
+    for pmc_id in st.session_state.stored_ids:
+        cmd = ["python", "make_pmc_html.py", pmc_id]
+        result = subprocess.run(cmd, capture_output=True, text=True)
+
+        if result.returncode == 0:
+            st.write(f"{' '.join(cmd)} executed successfully!")
+            st.write(result.stdout)
+        else:
+            st.write("Script execution failed!")
+            st.write(result.stderr)
+    cmd = ["python", "make_epub.py", '--pmc_ids'] + [','.join(st.session_state.stored_ids)]
+    subprocess.run(cmd, capture_output=True, text=True)
+    if result.returncode == 0:
+        st.write(f"{' '.join(cmd)} executed successfully!")
+        st.write(result.stdout)
+    else:
+        st.write("Script execution failed!")
+        st.write(result.stderr)
+
 def main():
     st.title("Item Lookup App")
     # Retrieve stored IDs from session state if they exist, or initialize as empty list
@@ -103,6 +125,9 @@ def main():
         col1.write(f"{pmc_id}: {title}")
         # Callback button to delete an individual item
         delete_btn = col2.button("Delete", key = f'delete_{pmc_id}', on_click=delete_item, args=(pmc_id, ))
+    # Button to run a command in terminal
+    if st.button("Run Command"):
+        run_command()
 
 if __name__ == "__main__":
     main()
