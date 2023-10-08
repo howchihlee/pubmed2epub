@@ -13,7 +13,7 @@ def create_directory(directory_path):
     except Exception as e:
         print(f"An error occurred: {e}")
 
-def main(pmc_id: str):
+def main(pmc_id: str, output_dir: str):
     if not os.path.isdir(pmc_id):
         #print(f'{file_path} does not exist.')
         url = oa_api_helper.get_pmc_ftp_url(pmc_id).replace('ftp://', 'https://')
@@ -29,7 +29,6 @@ def main(pmc_id: str):
     for sec in sections:
         elements += collect_elements(sec)
 
-    output_dir = 'output'
     create_directory(os.path.join(output_dir, 'figs'))
 
     title_div, (title, authors, abstract, keywords) = parse_article(tree)
@@ -56,8 +55,12 @@ def main(pmc_id: str):
 def parse_arguments():
     parser = argparse.ArgumentParser(description='make a html page for a pmc article')
     parser.add_argument('pmc_id', help='pmc id PMCXXXXXX.')
+    parser.add_argument('--output_dir',
+                        type=str,
+                        default='./output',
+                        help='Directory to store the output HTML page.')
     return parser.parse_args()
 
 if __name__ == "__main__":
     args = parse_arguments()
-    main(args.pmc_id)
+    main(args.pmc_id, args.output_dir)

@@ -1,10 +1,29 @@
+import io
+import os
+import shutil
 import subprocess
+import tempfile
 import time
+from contextlib import contextmanager
 from xml.etree import ElementTree as ET
 
 import requests
 import streamlit as st
 
+
+@contextmanager
+def temporary_directory():
+    """
+    Create and return a temporary directory. This has the same
+    behavior as mkdtemp but can be used as a context manager.
+    Upon exiting the context, the directory and all its contents
+    are removed.
+    """
+    dirpath = tempfile.mkdtemp()
+    try:
+        yield dirpath
+    finally:
+        shutil.rmtree(dirpath)
 
 def get_cache():
     """
@@ -85,26 +104,32 @@ def submit():
     st.session_state.stored_ids.update(ids)
     st.session_state.widget = ""
 
-def run_command():
-    """Runs an external Python script with arguments."""
-    for pmc_id in st.session_state.stored_ids:
-        cmd = ["python", "make_pmc_html.py", pmc_id]
-        result = subprocess.run(cmd, capture_output=True, text=True)
+def execute_command(cmd: list[str]) -> None:
+    """
+    Execute a subprocess command and write the output or error to Streamlit.
 
-        if result.returncode == 0:
-            st.write(f"{' '.join(cmd)} executed successfully!")
-            st.write(result.stdout)
-        else:
-            st.write("Script execution failed!")
-            st.write(result.stderr)
-    cmd = ["python", "make_epub.py", '--pmc_ids'] + [','.join(st.session_state.stored_ids)]
-    subprocess.run(cmd, capture_output=True, text=True)
+    :param cmd: The command to execute as a list.
+    """
+    result = subprocess.run(cmd, capture_output=True, text=True)
+    action = cmd[1] if len(cmd) > 1 else cmd[0]
     if result.returncode == 0:
-        st.write(f"{' '.join(cmd)} executed successfully!")
+        st.write(f"{action} successfully!")
         st.write(result.stdout)
     else:
-        st.write("Script execution failed!")
+        st.write(f"Execution failed: {' '.join(cmd)}")
         st.write(result.stderr)
+
+def run_command(html_dir: str, output_file: str = 'ebook.epub'):
+    """Runs an external Python script with arguments."""
+    for pmc_id in st.session_state.stored_ids:
+        execute_command(["python", "make_pmc_html.py", pmc_id, '--output_dir', html_dir])
+    cmd = ["python", "make_epub.py", '--pmc_ids'] + [','.join(st.session_state.stored_ids)]
+    cmd += ['--input_dir', html_dir]
+    cmd += ['--output_file', output_file]
+    execute_command(cmd)
+
+def kepubify(file_name: str):
+    execute_command(["./kepubify-linux-64bit", file_name, '-i'])
 
 def main():
     st.title("Item Lookup App")
@@ -116,6 +141,11 @@ def main():
     if 'text_input' not in st.session_state:
         st.session_state.text_input = ''
 
+    kepubify_option = st.radio(
+        'KOBO friendly format:',
+        ('Yes', 'No')
+    )
+
     st.text_input("Enter comma separated PMC IDs", key='widget', on_change=submit)
 
     # Display details for each stored item ID and provide delete button
@@ -125,9 +155,34 @@ def main():
         col1.write(f"{pmc_id}: {title}")
         # Callback button to delete an individual item
         delete_btn = col2.button("Delete", key = f'delete_{pmc_id}', on_click=delete_item, args=(pmc_id, ))
-    # Button to run a command in terminal
-    if st.button("Run Command"):
-        run_command()
+
+    col1, col2 = st.columns([4, 1])
+
+    if st.button("Generate EPUB"):
+        with temporary_directory() as tmp_dir:
+            epub_name = os.path.join(tmp_dir, 'ebook.epub')
+            run_command(tmp_dir, epub_name)
+
+            if kepubify_option == 'Yes':
+                kepubify(epub_name)
+                #epub_name = os.path.join(tmp_dir, 'ebook_converted.kepub.epub')
+
+            # Read the EPUB file in binary mode
+            with open(epub_name, "rb") as f:
+                binary_data = f.read()
+
+            buffer = io.BytesIO()
+            buffer.write(binary_data)
+            buffer.seek(0)
+
+            # Stream the EPUB file to the user
+            st.download_button(
+                label="Download EPUB File",
+                data=buffer,
+                file_name="ebook.epub",
+                mime="application/epub+zip"
+            )
+
 
 if __name__ == "__main__":
     main()

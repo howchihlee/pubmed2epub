@@ -62,22 +62,19 @@ def main(pmc_ids, html_dir:str,  output_file:str, css_file:str = './styles/style
     book.spine = ["nav"] + chapters
 
     # write to the file
+    print(f'''write ebook to: {output_file}''')
     epub.write_epub(output_file, book)
 
 def parse_arguments():
     parser = argparse.ArgumentParser(description='Process PMC IDs and specify output file.')
     parser.add_argument('--pmc_ids', type=str, required=True, help='The PMC IDs to be processed. IDs are comma separated')
+    parser.add_argument('--input_dir', type=str, default='./output', help='The file to read pmc htmls.')
     parser.add_argument('--output_file', type=str, default='ebook.epub', help='The file to write output to.')
     return parser.parse_args()
 
 if __name__ == '__main__':
     args = parse_arguments()
     pmc_ids = [s for s in args.pmc_ids.split(',') if s.startswith('PMC')]
-    print(pmc_ids)
-    #pmc_ids = ['PMC9169933', 'PMC9720135']
-    html_dir = 'output'
-    output_file = 'ebook.epub'
-    #mock_args = argparse.Namespace(pmc_ids="your_pmc_ids_here",
-    #                               output_file="your_output_file_here")
-
+    html_dir = args.input_dir
+    output_file = args.output_file
     main(pmc_ids, html_dir, output_file)
