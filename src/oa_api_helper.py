@@ -1,8 +1,9 @@
-import requests
-import xml.etree.ElementTree as ET
-import requests
-import tarfile
 import json
+import tarfile
+import xml.etree.ElementTree as ET
+
+import requests
+
 
 def extract_tar_gz(file_path, extract_path='.'):
     # Open the tar.gz file
@@ -25,12 +26,40 @@ def fetch_json_from_url(url: str):
     else:
         return f"Failed to retrieve data. HTTP Status Code: {response.status_code}"
 
-def get_pmc_ftp_url(PMC_ID: str):
-    url = f'https://www.ncbi.nlm.nih.gov/pmc/utils/oa/oa.fcgi?id={PMC_ID}'
-    response = requests.get(url)
-    root = ET.fromstring(response.content)
-    assert root.find('request').attrib['id'] == PMC_ID
-    return [l.attrib['href'] for l in root.find('records').find('record').findall('link') if l.attrib['format'] == 'tgz'][0]
+def get_pmc_ftp_url(pmc_id: str) -> (bool, str):
+    """
+    Checks if a given PMC ID corresponds to an open access article using the provided OA API.
+
+    Parameters:
+        - pmc_id (str): The PubMed Central ID to check.
+
+    Returns:
+        tuple:
+            bool: True if the PMC ID corresponds to an open access article, False otherwise.
+            str: FTP address of the open access article package if open access, empty string otherwise.
+    """
+    BASE_URL = "https://www.ncbi.nlm.nih.gov/pmc/utils/oa/oa.fcgi"
+    params = {"id": pmc_id}
+
+    response = requests.get(BASE_URL, params=params)
+    tree = ET.fromstring(response.content)
+
+    # Check for the error indicating non-open access
+    error_element = tree.find(".//error[@code='idIsNotOpenAccess']")
+    if error_element is not None:
+        return False, ""
+
+    # Check for the record indicating open access
+    assert tree.find('request').attrib['id'] == pmc_id
+    record_element = tree.find(".//record")
+    if record_element is not None:
+        # Extract FTP address for the .tar.gz format
+        link_element = record_element.find(".//link[@format='tgz']")
+        if link_element is not None:
+            ftp_address = link_element.get("href")
+            return True, ftp_address
+
+    return False, ""
 
 def pmc_id2pmid(pmc_id: str):
     '''

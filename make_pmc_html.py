@@ -16,7 +16,7 @@ def create_directory(directory_path):
 def main(pmc_id: str, output_dir: str):
     if not os.path.isdir(pmc_id):
         #print(f'{file_path} does not exist.')
-        url = oa_api_helper.get_pmc_ftp_url(pmc_id).replace('ftp://', 'https://')
+        url = oa_api_helper.get_pmc_ftp_url(pmc_id)[1].replace('ftp://', 'https://')
         oa_api_helper.download_file(url, f'{pmc_id}.tar.gz')
         file_path = f'{pmc_id}.tar.gz'
         oa_api_helper.extract_tar_gz(file_path)

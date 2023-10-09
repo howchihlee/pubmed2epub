@@ -9,6 +9,7 @@ from xml.etree import ElementTree as ET
 
 import requests
 import streamlit as st
+from src.oa_api_helper import get_pmc_ftp_url
 
 
 @contextmanager
@@ -70,38 +71,51 @@ def cache_with_expiry(fn, maxsize=100, expiry=3600):
 
     return wrapper
 
-@cache_with_expiry
-def get_article_title(pmc_id: str):
+#@cache_with_expiry
+def get_articles_summary(pmc_ids: list) -> dict:
     """
-    Fetches article details using the provided PMC ID.
+    Fetches article summary details using the provided list of PMC IDs.
 
-    :param pmc_id: The PMC ID for the article.
-    :type pmc_id: str
-    :return: Article title for the provided PMC ID.
-    :rtype: str
+    :param pmc_ids: A list of PMC IDs for the articles.
+    :type pmc_ids: list[str]
+    :return: A dictionary where the keys are PMC IDs and the values are dictionaries containing the article title and its open access status.
+    :rtype: dict
     """
-    base_url = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi"
+    base_url = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esummary.fcgi"
+    num2pmc_id = {i[3:]:i for i in pmc_ids}
     params = {
         "db": "pmc",
-        "id": pmc_id,
-        "retmode": "xml"
+        "id": ",".join(num2pmc_id.keys()),
+        "retmode": "json"
     }
 
     response = requests.get(base_url, params=params)
-    tree = ET.fromstring(response.content)
+    data = response.json()
 
-    # Extracting the title
-    title_element = tree.find(".//article-title")
-    title = title_element.text
-    return title
+    result = {}
+    for pmc_id in num2pmc_id:
+        article_details = data.get("result", {}).get(pmc_id, {})
+        title = article_details.get("title", "Title not found")
+        result[num2pmc_id[pmc_id]] = {
+            "title": title,
+        }
+    return result
 
 def delete_item(item_id):
     """Delete an item from stored_ids by index."""
     st.session_state.stored_ids.remove(item_id)
 
+def is_valid_id(pmc_id: str):
+    return pmc_id.startswith('PMC') and get_pmc_ftp_url(pmc_id)[0]
+
 def submit():
-    ids = [item.strip() for item in st.session_state.widget.split(",") if item.startswith('PMC')]
-    st.session_state.stored_ids.update(ids)
+    ids = [item.strip() for item in st.session_state.widget.split(",")]
+    ids = [pmc_id for pmc_id in ids if is_valid_id(pmc_id)]
+
+    summary_dict = get_articles_summary(ids)
+    for pmc_id, details in summary_dict.items():
+        st.session_state.stored_ids.add(pmc_id)
+        st.session_state.cached_titles[pmc_id] = details['title']
     st.session_state.widget = ""
 
 def execute_command(cmd: list[str]) -> None:
@@ -112,12 +126,12 @@ def execute_command(cmd: list[str]) -> None:
     """
     result = subprocess.run(cmd, capture_output=True, text=True)
     action = cmd[1] if len(cmd) > 1 else cmd[0]
-    if result.returncode == 0:
-        st.write(f"{action} successfully!")
-        st.write(result.stdout)
-    else:
-        st.write(f"Execution failed: {' '.join(cmd)}")
-        st.write(result.stderr)
+    #if result.returncode == 0:
+    #    st.write(f"{action} successfully!")
+    #    st.write(result.stdout)
+    #else:
+    #    st.write(f"Execution failed: {' '.join(cmd)}")
+    #    st.write(result.stderr)
 
 def run_command(html_dir: str, output_file: str = 'ebook.epub'):
     """Runs an external Python script with arguments."""
@@ -136,6 +150,8 @@ def main():
     # Retrieve stored IDs from session state if they exist, or initialize as empty list
     if "stored_ids" not in st.session_state:
         st.session_state.stored_ids = set()
+    if 'cached_titles' not in st.session_state:
+        st.session_state.cached_titles = {}
 
     # User input for comma-separated item IDs
     if 'text_input' not in st.session_state:
@@ -150,7 +166,7 @@ def main():
 
     # Display details for each stored item ID and provide delete button
     for idx, pmc_id in enumerate(st.session_state.stored_ids):
-        title = get_article_title(pmc_id)
+        title = st.session_state.cached_titles[pmc_id]
         col1, col2 = st.columns([4, 1])  # Adjust these numbers for column width ratio
         col1.write(f"{pmc_id}: {title}")
         # Callback button to delete an individual item
