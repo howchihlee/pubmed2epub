@@ -146,7 +146,7 @@ def kepubify(file_name: str):
     execute_command(["./kepubify-linux-64bit", file_name, '-i'])
 
 def main():
-    st.title("Item Lookup App")
+    st.title("Epubify PMC OA articles")
     # Retrieve stored IDs from session state if they exist, or initialize as empty list
     if "stored_ids" not in st.session_state:
         st.session_state.stored_ids = set()
