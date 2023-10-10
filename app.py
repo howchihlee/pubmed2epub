@@ -126,12 +126,12 @@ def execute_command(cmd: list[str]) -> None:
     """
     result = subprocess.run(cmd, capture_output=True, text=True)
     action = cmd[1] if len(cmd) > 1 else cmd[0]
-    #if result.returncode == 0:
-    #    st.write(f"{action} successfully!")
-    #    st.write(result.stdout)
-    #else:
-    #    st.write(f"Execution failed: {' '.join(cmd)}")
-    #    st.write(result.stderr)
+    if result.returncode == 0:
+        st.write(f"{action} successfully!")
+        st.write(result.stdout)
+    else:
+        st.write(f"Execution failed: {' '.join(cmd)}")
+        st.write(result.stderr)
 
 def run_command(html_dir: str, output_file: str = 'ebook.epub'):
     """Runs an external Python script with arguments."""
