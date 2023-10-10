@@ -143,7 +143,8 @@ def run_command(html_dir: str, output_file: str = 'ebook.epub'):
     execute_command(cmd)
 
 def kepubify(file_name: str):
-    execute_command(["./kepubify-linux-64bit", file_name, '-i'])
+    #execute_command(["./kepubify-linux-64bit", file_name, '-i'])
+    os.system(f'''./kepubify-linux-64bit {file_name} -i''')
 
 def main():
     st.title("Epubify PMC OA articles")
