@@ -137,7 +137,7 @@ def execute_command(cmd: list[str]) -> None:
 def run_command(html_dir: str, output_file: str = 'ebook.epub'):
     """Runs an external Python script with arguments."""
     for pmc_id in st.session_state.stored_ids:
-        execute_command(["python", "make_pmc_html.py", pmc_id, '--output_dir', html_dir])
+        execute_command([f"{sys.executable}", "make_pmc_html.py", pmc_id, '--output_dir', html_dir])
     cmd = [f"{sys.executable}", "make_epub.py", '--pmc_ids'] + [','.join(st.session_state.stored_ids)]
     cmd += ['--input_dir', html_dir]
     cmd += ['--output_file', output_file]
