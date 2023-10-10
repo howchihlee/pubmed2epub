@@ -12,6 +12,7 @@ import requests
 import streamlit as st
 from src.oa_api_helper import get_pmc_ftp_url
 
+os.chmod('./kepubify-linux-64bit', 0o755)
 
 @contextmanager
 def temporary_directory():
@@ -127,12 +128,12 @@ def execute_command(cmd: list[str]) -> None:
     """
     result = subprocess.run(cmd, capture_output=True, text=True)
     action = cmd[1] if len(cmd) > 1 else cmd[0]
-    if result.returncode == 0:
-        st.write(f"{action} successfully!")
-        st.write(result.stdout)
-    else:
-        st.write(f"Execution failed: {' '.join(cmd)}")
-        st.write(result.stderr)
+    #if result.returncode == 0:
+    #    st.write(f"{action} successfully!")
+    #    st.write(result.stdout)
+    #else:
+    #    st.write(f"Execution failed: {' '.join(cmd)}")
+    #    st.write(result.stderr)
 
 def run_command(html_dir: str, output_file: str = 'ebook.epub'):
     """Runs an external Python script with arguments."""
@@ -144,9 +145,8 @@ def run_command(html_dir: str, output_file: str = 'ebook.epub'):
     execute_command(cmd)
 
 def kepubify(file_name: str):
-    #execute_command(["./kepubify-linux-64bit", file_name, '-i'])
-    os.chmod('./kepubify-linux-64bit', 0o755)
-    os.system(f'''./kepubify-linux-64bit {file_name} -i''')
+    execute_command(["./kepubify-linux-64bit", file_name, '-i'])
+    #os.system(f'''./kepubify-linux-64bit {file_name} -i''')
 
 def main():
     st.title("Epubify PMC OA articles")
