@@ -10,10 +10,10 @@ from xml.etree import ElementTree as ET
 
 import requests
 import streamlit as st
-from src.oa_api_helper import get_pmc_ftp_url
+from src.oa_api_helper import get_pmc_ftp_url, search_pmc_by_title
 
 os.chmod('./kepubify-linux-64bit', 0o755)
-
+MAX_ARTICLE_NUM = 8
 @contextmanager
 def temporary_directory():
     """
@@ -110,15 +110,24 @@ def delete_item(item_id):
 def is_valid_id(pmc_id: str):
     return pmc_id.startswith('PMC') and get_pmc_ftp_url(pmc_id)[0]
 
-def submit():
-    ids = [item.strip() for item in st.session_state.widget.split(",")]
-    ids = [pmc_id for pmc_id in ids if is_valid_id(pmc_id)]
-
+def _update_states_by_input(ids: list):
+    if type(MAX_ARTICLE_NUM) is int:
+        ids = ids[:(MAX_ARTICLE_NUM - len(st.session_state.stored_ids))]
     summary_dict = get_articles_summary(ids)
     for pmc_id, details in summary_dict.items():
         st.session_state.stored_ids.add(pmc_id)
         st.session_state.cached_titles[pmc_id] = details['title']
     st.session_state.widget = ""
+
+def submit_ids():
+    ids = [item.strip() for item in st.session_state.widget.split(",")]
+    ids = [pmc_id for pmc_id in ids if is_valid_id(pmc_id)]
+    _update_states_by_input(ids)
+
+def submit_title():
+    ids = ['PMC' + str(i) for i in search_pmc_by_title(st.session_state.widget)]
+    ids = [pmc_id for pmc_id in ids if is_valid_id(pmc_id)]
+    _update_states_by_input(ids)
 
 def execute_command(cmd: list[str]) -> None:
     """
@@ -149,7 +158,8 @@ def kepubify(file_name: str):
     #os.system(f'''./kepubify-linux-64bit {file_name} -i''')
 
 def main():
-    st.title("Epubify PMC OA articles")
+    st.title("EPubify PMC")
+    st.text("Converting PMC OA Articles to E-reader Friendly Formats")
     # Retrieve stored IDs from session state if they exist, or initialize as empty list
     if "stored_ids" not in st.session_state:
         st.session_state.stored_ids = set()
@@ -160,13 +170,21 @@ def main():
     if 'text_input' not in st.session_state:
         st.session_state.text_input = ''
 
-    kepubify_option = st.radio(
+    cols = st.columns([1, 1, 1, 1])
+    search_option = cols[0].radio(
+        'find articles by',
+        ('title', 'PMC ID')
+    )
+    kepubify_option = cols[1].radio(
         'KOBO friendly format:',
         ('Yes', 'No')
     )
-
-    st.text_input("Enter comma separated PMC IDs", key='widget', on_change=submit)
-
+    if search_option == 'PMC ID':
+        st.text_input("Add PMC IDs with commas (e.g. PMC5447237)", key='widget', on_change=submit_ids)
+        st.text(f'''max {MAX_ARTICLE_NUM} articles''')
+    elif search_option == 'title':
+        st.text_input("Article Title Lookup", key='widget', on_change=submit_title)
+        st.text(f'''max {MAX_ARTICLE_NUM} articles''')
     # Display details for each stored item ID and provide delete button
     for idx, pmc_id in enumerate(st.session_state.stored_ids):
         title = st.session_state.cached_titles[pmc_id]
@@ -175,9 +193,7 @@ def main():
         # Callback button to delete an individual item
         delete_btn = col2.button("Delete", key = f'delete_{pmc_id}', on_click=delete_item, args=(pmc_id, ))
 
-    col1, col2 = st.columns([4, 1])
-
-    if st.button("Generate EPUB"):
+    if st.button("Save Selected Papers to EPUB"):
         with temporary_directory() as tmp_dir:
             epub_name = os.path.join(tmp_dir, 'ebook.epub')
             run_command(tmp_dir, epub_name)

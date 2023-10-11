@@ -71,6 +71,33 @@ def pmc_id2pmid(pmc_id: str):
     pmid = [r['pmid'] for r in json_data['records'] if r['pmcid'] == pmc_id][0]
     return pmid
 
+def search_pmc_by_title(title: str, max_results: int=10):
+    """
+    Search the PMC database by title and retrieve a list of PMCID ordered by relevance.
+
+    :param title: The title to search for.
+    :type title: str
+    :param max_results: Maximum number of results to return, defaults to 100.
+    :type max_results: int, optional
+    :return: A list of PMCID strings.
+    :rtype: list
+    """
+
+    base_url = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi"
+    params = {
+        "db": "pmc",
+        "term": f"{title}[Title]",
+        "retmode": "json",
+        "retmax": max_results
+    }
+
+    response = requests.get(base_url, params=params)
+    response_data = response.json()
+
+    pmc_ids = response_data['esearchresult']['idlist']
+
+    return pmc_ids
+
 def get_bioc_json(pmid):
     url = f'https://www.ncbi.nlm.nih.gov/research/bionlp/RESTful/pmcoa.cgi/BioC_json/{pmid}/ascii'
     req = requests.get(url)
