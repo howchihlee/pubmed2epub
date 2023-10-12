@@ -9,6 +9,7 @@ from contextlib import contextmanager
 from xml.etree import ElementTree as ET
 
 import requests
+
 import streamlit as st
 from src.oa_api_helper import get_pmc_ftp_url, search_pmc_by_title
 
@@ -217,7 +218,10 @@ def main():
                 file_name="ebook.epub",
                 mime="application/epub+zip"
             )
-
+            st.markdown("---")
+            st.markdown(
+                "More infos and :star: at [github.com/howchihlee/pubmed2epub](https://github.com/howchihlee/pubmed2epub)"
+            )
 
 if __name__ == "__main__":
     main()
